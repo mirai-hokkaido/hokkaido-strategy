@@ -47,20 +47,13 @@ section h2 { font-family:'M PLUS 1',sans-serif; font-size:24px; font-weight:900;
 .bar-fill.kyosan { background:linear-gradient(90deg,#b71c1c,#d32f2f); }
 .bar-fill.reiwa { background:linear-gradient(90deg,#283593,#5c6bc0); }
 .bar-fill.hoshuto { background:linear-gradient(90deg,#4e342e,#795548); }
+.bar-fill.area { background:linear-gradient(90deg,#1a73e8,#00c853); }
+.bar-fill.up { background:linear-gradient(90deg,#ff6d00,#00c853); }
+.bar-fill.slow { background:linear-gradient(90deg,#616161,#9e9e9e); }
 .sort-tabs { display:flex; flex-wrap:wrap; gap:6px; margin:16px 0; }
 .sort-tab { background:var(--bg-card-alt); border:1px solid var(--border); color:var(--text-dim); font-size:12px; padding:6px 14px; border-radius:8px; cursor:pointer; transition:all .2s; font-family:inherit; }
 .sort-tab:hover { border-color:var(--primary); color:var(--text); }
 .sort-tab.active { background:rgba(26,115,232,.15); border-color:var(--primary); color:var(--primary); font-weight:700; }
-.data-table-wrapper { overflow-x:auto; margin:16px 0; border-radius:12px; border:1px solid var(--border); }
-table { width:100%; border-collapse:collapse; font-size:13px; }
-th { background:var(--bg-card-alt); color:var(--text-dim); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:.05em; padding:12px 16px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; transition:color .2s; }
-th:hover { color:var(--primary); }
-th.sorted { color:var(--primary); }
-td { padding:10px 16px; border-bottom:1px solid rgba(255,255,255,.04); white-space:nowrap; }
-tr:hover td { background:rgba(26,115,232,.05); }
-tbody tr:first-child td { background:rgba(26,115,232,.08); font-weight:500; }
-.num { text-align:right; font-variant-numeric:tabular-nums; }
-.positive { color:var(--accent); }
 .analysis { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:24px; margin:24px 0; font-size:14px; line-height:1.8; }
 .analysis strong { color:var(--text-bright); }
 .analysis .tag { display:inline-block; background:rgba(26,115,232,.15); color:var(--primary); font-size:11px; padding:2px 10px; border-radius:4px; margin-bottom:8px; font-weight:700; }
@@ -140,7 +133,7 @@ footer { text-align:center; padding:60px 20px; font-size:12px; color:var(--text-
 <section id="allcity">
   <div class="section-label">データ</div>
   <h2>全自治体 チームみらい得票（衆院比例）</h2>
-  <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">列ヘッダーまたは下のボタンをタップで並び替え。</p>
+  <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">下のボタンをタップで並び替え。</p>
   <div class="sort-tabs">
     <button class="sort-tab active" data-key="h_rate">衆院得票率 ↓</button>
     <button class="sort-tab" data-key="s_rate">参院得票率 ↓</button>
@@ -148,34 +141,18 @@ footer { text-align:center; padding:60px 20px; font-size:12px; color:var(--text-
     <button class="sort-tab" data-key="s_votes">参院票数 ↓</button>
     <button class="sort-tab" data-key="diff">衆参差 ↓</button>
   </div>
-  <div class="data-table-wrapper"><table id="cityTable">
-    <thead><tr>
-      <th data-key="name">地域</th>
-      <th class="num sorted" data-key="h_rate">衆院 得票率</th>
-      <th class="num" data-key="s_rate">参院 得票率</th>
-      <th class="num" data-key="h_votes">衆院 票数</th>
-      <th class="num" data-key="s_votes">参院 票数</th>
-      <th class="num" data-key="diff">衆参 差</th>
-    </tr></thead>
-    <tbody id="cityTableBody"></tbody>
-  </table></div>
+  <div class="bar-chart" id="cityBars"></div>
 </section>
 
 <section id="comparison">
   <div class="section-label">データ</div>
   <h2>衆参差ランキング TOP10（伸びたエリア）</h2>
-  <div class="data-table-wrapper"><table>
-    <thead><tr><th>地域</th><th class="num">衆院 得票率</th><th class="num">参院 得票率</th><th class="num">衆院 票数</th><th class="num">参院 票数</th><th class="num">衆参 差</th></tr></thead>
-    <tbody id="diffTableBody"></tbody>
-  </table></div>
+  <div class="bar-chart" id="diffBars"></div>
   <div class="analysis"><div class="tag">傾向</div><br>
     <strong>参院選R7.7（比例）→ 衆院選R8.2（比例）の変化。</strong>差が大きいエリアほど「衆院で新たに票を獲得できた」ことを示す。<strong>札幌市中央区（+6.0pt）がトップで9.51%を記録。</strong>札幌市全10区がすべて上位に入っており、都市部での浸透力が際立つ。「衆院選でチームみらいを初めて知った層」が多いことを示す。
   </div>
   <h2 style="margin-top:40px;">伸びが鈍かったエリア</h2>
-  <div class="data-table-wrapper"><table>
-    <thead><tr><th>地域</th><th class="num">衆院 得票率</th><th class="num">参院 得票率</th><th class="num">衆院 票数</th><th class="num">参院 票数</th><th class="num">衆参 差</th></tr></thead>
-    <tbody id="slowTableBody"></tbody>
-  </table></div>
+  <div class="bar-chart" id="slowBars"></div>
   <div class="analysis"><div class="tag">なぜ伸びが鈍かったのか</div><br>
     夕張市・歌志内市・三笠市など旧産炭地は人口減少・高齢化が極めて深刻。<strong>有効投票数自体が少なく</strong>（夕張3,285票、歌志内1,370票）、1票の変動で率が大きく動く。自民＋中道で60%以上を占め、既存政党への依存度が高い。<br><br>
     <strong>訴求すべきポイント：</strong>「スマート農業」「医療DX・オンライン診療」「除雪ロボット」「地域の公共交通維持」など、過疎地の課題とテクノロジーを結びつけた訴求が有効。
@@ -303,28 +280,33 @@ const diffData = [{"name": "中央区", "h_votes": 11522, "s_votes": 4540, "h_ra
 const slowData = [{"name": "夕張市", "h_votes": 98, "s_votes": 27, "h_rate": 2.98, "s_rate": 0.8, "diff": 2.18}, {"name": "歌志内市", "h_votes": 40, "s_votes": 7, "h_rate": 2.92, "s_rate": 0.48, "diff": 2.44}, {"name": "北斗市", "h_votes": 742, "s_votes": 198, "h_rate": 3.62, "s_rate": 1.01, "diff": 2.61}, {"name": "網走市", "h_votes": 611, "s_votes": 165, "h_rate": 3.71, "s_rate": 1.04, "diff": 2.67}, {"name": "三笠市", "h_votes": 126, "s_votes": 29, "h_rate": 3.47, "s_rate": 0.77, "diff": 2.7}];
 
 function fmt(n) { return n.toLocaleString(); }
-function renderRows(tbodyId, rows) {
-  const tb = document.getElementById(tbodyId);
-  tb.innerHTML = rows.map(r =>
-    `<tr><td>${r.name}</td><td class="num">${r.h_rate.toFixed(2)}%</td><td class="num">${r.s_rate.toFixed(2)}%</td><td class="num">${fmt(r.h_votes)}</td><td class="num">${fmt(r.s_votes)}</td><td class="num positive">${r.diff>=0?'+':''}${r.diff.toFixed(2)}pt</td></tr>`
-  ).join('');
+function fmtVal(key, v) {
+  if (key === 'h_rate' || key === 's_rate') return v.toFixed(2) + '%';
+  if (key === 'diff') return (v >= 0 ? '+' : '') + v.toFixed(2) + 'pt';
+  return fmt(v);
+}
+function renderBars(containerId, rows, key, fillClass) {
+  const el = document.getElementById(containerId);
+  const maxVal = Math.max(...rows.map(r => r[key]), 0.0001);
+  el.innerHTML = rows.map(r => {
+    const widthPct = Math.max(r[key] / maxVal * 100, 3);
+    return `<div class="bar-row"><div class="bar-label">${r.name}</div><div class="bar-track"><div class="bar-fill ${fillClass}" style="width:${widthPct.toFixed(1)}%">${fmtVal(key, r[key])}</div></div></div>`;
+  }).join('');
 }
 
 let currentKey = 'h_rate';
 function sortAndRender(key) {
   currentKey = key;
   const sorted = [...cityData].sort((a,b) => key==='name' ? a.name.localeCompare(b.name,'ja') : b[key]-a[key]);
-  renderRows('cityTableBody', sorted);
+  renderBars('cityBars', sorted, key, 'area');
   document.querySelectorAll('.sort-tab').forEach(t => t.classList.toggle('active', t.dataset.key===key));
-  document.querySelectorAll('#cityTable th').forEach(th => th.classList.toggle('sorted', th.dataset.key===key));
 }
 
 document.querySelectorAll('.sort-tab').forEach(tab => tab.addEventListener('click', () => sortAndRender(tab.dataset.key)));
-document.querySelectorAll('#cityTable th').forEach(th => th.addEventListener('click', () => sortAndRender(th.dataset.key)));
 
 sortAndRender('h_rate');
-renderRows('diffTableBody', diffData);
-renderRows('slowTableBody', slowData);
+renderBars('diffBars', diffData, 'diff', 'up');
+renderBars('slowBars', slowData, 'diff', 'slow');
 
 const sections = document.querySelectorAll('section[id]'), navLinks = document.querySelectorAll('.nav a');
 window.addEventListener('scroll', () => {
