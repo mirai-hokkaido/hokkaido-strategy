@@ -56,6 +56,14 @@ section h2 { font-family:'M PLUS 1',sans-serif; font-size:24px; font-weight:900;
 .chart-legend .sw.line-s { background:#ffd54f; border-radius:50%; }
 .chart-legend .sw.diffbar { background:linear-gradient(90deg,#ff6d00,#00c853); }
 .chart-legend .sw.diffline { background:#42a5f5; border-radius:50%; }
+.data-table-wrapper { overflow-x:auto; margin:14px 0 0; border-radius:12px; border:1px solid var(--border); }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { background:var(--bg-card-alt); color:var(--text-dim); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:.05em; padding:10px 14px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--border); }
+td { padding:9px 14px; border-bottom:1px solid rgba(255,255,255,.04); white-space:nowrap; }
+tr:hover td { background:rgba(26,115,232,.05); }
+tbody tr:first-child td { background:rgba(26,115,232,.08); font-weight:500; }
+.num { text-align:right; font-variant-numeric:tabular-nums; }
+.positive { color:var(--accent); }
 .analysis { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:24px; margin:24px 0; font-size:14px; line-height:1.8; }
 .analysis strong { color:var(--text-bright); }
 .analysis .tag { display:inline-block; background:rgba(26,115,232,.15); color:var(--primary); font-size:11px; padding:2px 10px; border-radius:4px; margin-bottom:8px; font-weight:700; }
@@ -141,6 +149,10 @@ footer { text-align:center; padding:60px 20px; font-size:12px; color:var(--text-
     <span><i class="sw line-h"></i>衆院得票率（線）</span><span><i class="sw line-s"></i>参院得票率（線）</span>
   </div>
   <div class="chart-scroll"><canvas id="cityChart"></canvas></div>
+  <div class="data-table-wrapper"><table>
+    <thead><tr><th>地域</th><th class="num">衆院得票率</th><th class="num">参院得票率</th><th class="num">衆院票数</th><th class="num">参院票数</th><th class="num">衆参差</th></tr></thead>
+    <tbody id="cityTableBody"></tbody>
+  </table></div>
 </section>
 
 <section id="comparison">
@@ -148,12 +160,20 @@ footer { text-align:center; padding:60px 20px; font-size:12px; color:var(--text-
   <h2>衆参差ランキング TOP10（伸びたエリア）</h2>
   <div class="chart-legend"><span><i class="sw diffbar"></i>衆参 票数差（棒）</span><span><i class="sw diffline"></i>衆参 得票率差（線）</span></div>
   <div class="chart-scroll"><canvas id="diffChart"></canvas></div>
+  <div class="data-table-wrapper"><table>
+    <thead><tr><th>地域</th><th class="num">衆院得票率</th><th class="num">参院得票率</th><th class="num">衆院票数</th><th class="num">参院票数</th><th class="num">衆参差</th></tr></thead>
+    <tbody id="diffTableBody"></tbody>
+  </table></div>
   <div class="analysis"><div class="tag">傾向</div><br>
     <strong>参院選R7.7（比例）→ 衆院選R8.2（比例）の変化。</strong>差が大きいエリアほど「衆院で新たに票を獲得できた」ことを示す。<strong>札幌市中央区（+6.0pt）がトップで9.51%を記録。</strong>札幌市全10区がすべて上位に入っており、都市部での浸透力が際立つ。「衆院選でチームみらいを初めて知った層」が多いことを示す。
   </div>
   <h2 style="margin-top:40px;">伸びが鈍かったエリア</h2>
   <div class="chart-legend"><span><i class="sw diffbar"></i>衆参 票数差（棒）</span><span><i class="sw diffline"></i>衆参 得票率差（線）</span></div>
   <div class="chart-scroll"><canvas id="slowChart"></canvas></div>
+  <div class="data-table-wrapper"><table>
+    <thead><tr><th>地域</th><th class="num">衆院得票率</th><th class="num">参院得票率</th><th class="num">衆院票数</th><th class="num">参院票数</th><th class="num">衆参差</th></tr></thead>
+    <tbody id="slowTableBody"></tbody>
+  </table></div>
   <div class="analysis"><div class="tag">なぜ伸びが鈍かったのか</div><br>
     夕張市・歌志内市・三笠市など旧産炭地は人口減少・高齢化が極めて深刻。<strong>有効投票数自体が少なく</strong>（夕張3,285票、歌志内1,370票）、1票の変動で率が大きく動く。自民＋中道で60%以上を占め、既存政党への依存度が高い。<br><br>
     <strong>訴求すべきポイント：</strong>「スマート農業」「医療DX・オンライン診療」「除雪ロボット」「地域の公共交通維持」など、過疎地の課題とテクノロジーを結びつけた訴求が有効。
@@ -406,13 +426,26 @@ function drawDiffChart(canvasId, data) {
   ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + ph); ctx.lineTo(padL + pw, padT + ph); ctx.stroke();
 }
 
+function renderTable(tbodyId, rows) {
+  const tb = document.getElementById(tbodyId);
+  tb.innerHTML = rows.map(r =>
+    `<tr><td>${r.name}</td><td class="num">${r.h_rate.toFixed(2)}%</td><td class="num">${r.s_rate.toFixed(2)}%</td><td class="num">${fmt(r.h_votes)}</td><td class="num">${fmt(r.s_votes)}</td><td class="num positive">${r.diff>=0?'+':''}${r.diff.toFixed(2)}pt</td></tr>`
+  ).join('');
+}
+
+const sortedCityData = [...cityData].sort((a, b) => b.h_rate - a.h_rate);
+
 function drawAllCharts() {
-  drawGroupedChart('cityChart', [...cityData].sort((a, b) => b.h_rate - a.h_rate));
+  drawGroupedChart('cityChart', sortedCityData);
   drawDiffChart('diffChart', diffData);
   drawDiffChart('slowChart', slowData);
 }
 drawAllCharts();
 window.addEventListener('resize', drawAllCharts);
+
+renderTable('cityTableBody', sortedCityData);
+renderTable('diffTableBody', diffData);
+renderTable('slowTableBody', slowData);
 
 const sections = document.querySelectorAll('section[id]'), navLinks = document.querySelectorAll('.nav a');
 window.addEventListener('scroll', () => {
