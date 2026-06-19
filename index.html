@@ -48,10 +48,14 @@ section h2 { font-family:'M PLUS 1',sans-serif; font-size:24px; font-weight:900;
 .bar-fill.reiwa { background:linear-gradient(90deg,#283593,#5c6bc0); }
 .bar-fill.hoshuto { background:linear-gradient(90deg,#4e342e,#795548); }
 .chart-scroll { overflow-x:auto; margin:12px 0; border-radius:12px; border:1px solid var(--border); background:var(--bg-card); padding:14px 10px 6px; }
-.chart-legend { display:flex; gap:18px; font-size:12px; color:var(--text-dim); margin:10px 0 2px; }
+.chart-legend { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--text-dim); margin:10px 0 2px; }
 .chart-legend .sw { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:middle; }
-.chart-legend .sw.area { background:linear-gradient(90deg,#1a73e8,#00c853); }
-.chart-legend .sw.line { background:#ff6d00; border-radius:50%; }
+.chart-legend .sw.votes-h { background:linear-gradient(90deg,#1a73e8,#00c853); }
+.chart-legend .sw.votes-s { background:#7c3aed; }
+.chart-legend .sw.line-h { background:#ff6d00; border-radius:50%; }
+.chart-legend .sw.line-s { background:#ffd54f; border-radius:50%; }
+.chart-legend .sw.diffbar { background:linear-gradient(90deg,#ff6d00,#00c853); }
+.chart-legend .sw.diffline { background:#42a5f5; border-radius:50%; }
 .analysis { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:24px; margin:24px 0; font-size:14px; line-height:1.8; }
 .analysis strong { color:var(--text-bright); }
 .analysis .tag { display:inline-block; background:rgba(26,115,232,.15); color:var(--primary); font-size:11px; padding:2px 10px; border-radius:4px; margin-bottom:8px; font-weight:700; }
@@ -130,22 +134,25 @@ footer { text-align:center; padding:60px 20px; font-size:12px; color:var(--text-
 
 <section id="allcity">
   <div class="section-label">データ</div>
-  <h2>全自治体 チームみらい得票率（衆院比例）</h2>
+  <h2>全自治体 チームみらい得票（衆院・参院比例）</h2>
   <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">衆院得票率の高い順（44自治体）。横にスクロールできます。</p>
-  <div class="chart-legend"><span><i class="sw area"></i>衆院得票率（棒）</span><span><i class="sw line"></i>参院得票率（線）</span></div>
+  <div class="chart-legend">
+    <span><i class="sw votes-h"></i>衆院票数（棒）</span><span><i class="sw votes-s"></i>参院票数（棒）</span>
+    <span><i class="sw line-h"></i>衆院得票率（線）</span><span><i class="sw line-s"></i>参院得票率（線）</span>
+  </div>
   <div class="chart-scroll"><canvas id="cityChart"></canvas></div>
 </section>
 
 <section id="comparison">
   <div class="section-label">データ</div>
   <h2>衆参差ランキング TOP10（伸びたエリア）</h2>
-  <div class="chart-legend"><span><i class="sw area"></i>衆院得票率（棒）</span><span><i class="sw line"></i>参院得票率（線）</span></div>
+  <div class="chart-legend"><span><i class="sw diffbar"></i>衆参 票数差（棒）</span><span><i class="sw diffline"></i>衆参 得票率差（線）</span></div>
   <div class="chart-scroll"><canvas id="diffChart"></canvas></div>
   <div class="analysis"><div class="tag">傾向</div><br>
     <strong>参院選R7.7（比例）→ 衆院選R8.2（比例）の変化。</strong>差が大きいエリアほど「衆院で新たに票を獲得できた」ことを示す。<strong>札幌市中央区（+6.0pt）がトップで9.51%を記録。</strong>札幌市全10区がすべて上位に入っており、都市部での浸透力が際立つ。「衆院選でチームみらいを初めて知った層」が多いことを示す。
   </div>
   <h2 style="margin-top:40px;">伸びが鈍かったエリア</h2>
-  <div class="chart-legend"><span><i class="sw area"></i>衆院得票率（棒）</span><span><i class="sw line"></i>参院得票率（線）</span></div>
+  <div class="chart-legend"><span><i class="sw diffbar"></i>衆参 票数差（棒）</span><span><i class="sw diffline"></i>衆参 得票率差（線）</span></div>
   <div class="chart-scroll"><canvas id="slowChart"></canvas></div>
   <div class="analysis"><div class="tag">なぜ伸びが鈍かったのか</div><br>
     夕張市・歌志内市・三笠市など旧産炭地は人口減少・高齢化が極めて深刻。<strong>有効投票数自体が少なく</strong>（夕張3,285票、歌志内1,370票）、1票の変動で率が大きく動く。自民＋中道で60%以上を占め、既存政党への依存度が高い。<br><br>
@@ -275,33 +282,107 @@ const slowData = [{"name": "夕張市", "h_votes": 98, "s_votes": 27, "h_rate": 
 
 function fmt(n) { return n.toLocaleString(); }
 
-// 棒＝衆院得票率、線＝参院得票率の複合グラフ（Canvas）
-function drawComboChart(canvasId, data) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
+function setupCanvas(canvas, count, perItem, H) {
   const dpr = window.devicePixelRatio || 1;
-  const perItem = data.length > 15 ? 34 : 64;
-  const padL = 36, padR = 12, padT = 14, padB = 64;
+  const padL = 46, padR = 44, padT = 14, padB = 64;
   const minW = canvas.parentElement.clientWidth - 20;
-  const W = Math.max(data.length * perItem + padL + padR, minW);
-  const H = 260;
+  const W = Math.max(count * perItem + padL + padR, minW);
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, W, H);
+  return { ctx, W, H, padL, padR, padT, padB, pw: W - padL - padR, ph: H - padT - padB };
+}
 
-  const pw = W - padL - padR, ph = H - padT - padB;
+function drawXLabels(ctx, data, perItem, padL, y) {
+  data.forEach((d, i) => {
+    const cx = padL + perItem * i + perItem / 2;
+    ctx.save();
+    ctx.translate(cx, y + 8);
+    ctx.rotate(-Math.PI / 3);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#94a3b8'; ctx.font = '10px "Noto Sans JP",sans-serif';
+    ctx.fillText(d.name, 0, 0);
+    ctx.restore();
+  });
+}
+
+function drawLine(ctx, pts, color) {
+  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+  pts.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+  ctx.stroke();
+  pts.forEach(([x, y]) => {
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = '#0a0e1a'; ctx.lineWidth = 1; ctx.stroke();
+  });
+}
+
+// 棒＝衆院票数・参院票数（並べて表示）、線＝衆院得票率・参院得票率
+function drawGroupedChart(canvasId, data) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const perItem = data.length > 15 ? 46 : 90;
+  const { ctx, padL, padR, padT, pw, ph } = setupCanvas(canvas, data.length, perItem, 280);
+
+  const maxVotes = Math.max(...data.map(d => Math.max(d.h_votes, d.s_votes))) * 1.15;
   const maxRate = Math.max(...data.map(d => Math.max(d.h_rate, d.s_rate))) * 1.15;
 
-  // grid + y軸ラベル
-  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1;
-  ctx.fillStyle = '#94a3b8'; ctx.font = '10px "Noto Sans JP",sans-serif'; ctx.textAlign = 'right';
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1; ctx.font = '10px "Noto Sans JP",sans-serif';
   for (let i = 0; i <= 4; i++) {
-    const v = maxRate / 4 * i;
-    const y = padT + ph - (v / maxRate * ph);
+    const y = padT + ph - (ph / 4 * i);
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + pw, y); ctx.stroke();
-    ctx.fillText(v.toFixed(1) + '%', padL - 6, y + 3);
+    ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right';
+    ctx.fillText(fmt(Math.round(maxVotes / 4 * i)), padL - 6, y + 3);
+    ctx.textAlign = 'left';
+    ctx.fillText((maxRate / 4 * i).toFixed(1) + '%', padL + pw + 6, y + 3);
+  }
+
+  const bw = perItem * 0.32, gap = perItem * 0.06;
+  const hPts = [], sPts = [];
+
+  data.forEach((d, i) => {
+    const cx = padL + perItem * i + perItem / 2;
+    const hbh = (d.h_votes / maxVotes) * ph;
+    const grad = ctx.createLinearGradient(0, padT + ph - hbh, 0, padT + ph);
+    grad.addColorStop(0, '#1a73e8'); grad.addColorStop(1, '#00c853');
+    ctx.fillStyle = grad;
+    ctx.fillRect(cx - bw - gap / 2, padT + ph - hbh, bw, hbh);
+
+    const sbh = (d.s_votes / maxVotes) * ph;
+    ctx.fillStyle = '#7c3aed';
+    ctx.fillRect(cx + gap / 2, padT + ph - sbh, bw, sbh);
+
+    hPts.push([cx, padT + ph - (d.h_rate / maxRate * ph)]);
+    sPts.push([cx, padT + ph - (d.s_rate / maxRate * ph)]);
+  });
+  drawXLabels(ctx, data, perItem, padL, padT + ph);
+  drawLine(ctx, hPts, '#ff6d00');
+  drawLine(ctx, sPts, '#ffd54f');
+
+  ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + ph); ctx.lineTo(padL + pw, padT + ph); ctx.stroke();
+}
+
+// 棒＝衆参の票数差（衆院−参院）、線＝衆参の得票率差
+function drawDiffChart(canvasId, data) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const perItem = data.length > 15 ? 34 : 64;
+  const { ctx, padL, padR, padT, pw, ph } = setupCanvas(canvas, data.length, perItem, 260);
+
+  const voteDiffs = data.map(d => d.h_votes - d.s_votes);
+  const maxVoteDiff = Math.max(...voteDiffs) * 1.15;
+  const maxRateDiff = Math.max(...data.map(d => d.diff)) * 1.15;
+
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1; ctx.font = '10px "Noto Sans JP",sans-serif';
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + ph - (ph / 4 * i);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + pw, y); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right';
+    ctx.fillText(fmt(Math.round(maxVoteDiff / 4 * i)), padL - 6, y + 3);
+    ctx.textAlign = 'left';
+    ctx.fillText('+' + (maxRateDiff / 4 * i).toFixed(1) + 'pt', padL + pw + 6, y + 3);
   }
 
   const bw = perItem * 0.5;
@@ -309,40 +390,26 @@ function drawComboChart(canvasId, data) {
 
   data.forEach((d, i) => {
     const cx = padL + perItem * i + perItem / 2;
-    const bh = (d.h_rate / maxRate) * ph;
+    const vd = d.h_votes - d.s_votes;
+    const bh = (vd / maxVoteDiff) * ph;
     const grad = ctx.createLinearGradient(0, padT + ph - bh, 0, padT + ph);
-    grad.addColorStop(0, '#1a73e8'); grad.addColorStop(1, '#00c853');
+    grad.addColorStop(0, '#ff6d00'); grad.addColorStop(1, '#00c853');
     ctx.fillStyle = grad;
     ctx.fillRect(cx - bw / 2, padT + ph - bh, bw, bh);
 
-    pts.push([cx, padT + ph - (d.s_rate / maxRate * ph)]);
-
-    ctx.save();
-    ctx.translate(cx, padT + ph + 8);
-    ctx.rotate(-Math.PI / 3);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#94a3b8'; ctx.font = '10px "Noto Sans JP",sans-serif';
-    ctx.fillText(d.name, 0, 0);
-    ctx.restore();
+    pts.push([cx, padT + ph - (d.diff / maxRateDiff * ph)]);
   });
-
-  ctx.beginPath();
-  ctx.strokeStyle = '#ff6d00'; ctx.lineWidth = 2;
-  pts.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
-  ctx.stroke();
-  pts.forEach(([x, y]) => {
-    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff6d00'; ctx.fill();
-    ctx.strokeStyle = '#0a0e1a'; ctx.lineWidth = 1; ctx.stroke();
-  });
+  drawXLabels(ctx, data, perItem, padL, padT + ph);
+  drawLine(ctx, pts, '#42a5f5');
 
   ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + ph); ctx.lineTo(padL + pw, padT + ph); ctx.stroke();
 }
 
 function drawAllCharts() {
-  drawComboChart('cityChart', [...cityData].sort((a, b) => b.h_rate - a.h_rate));
-  drawComboChart('diffChart', diffData);
-  drawComboChart('slowChart', slowData);
+  drawGroupedChart('cityChart', [...cityData].sort((a, b) => b.h_rate - a.h_rate));
+  drawDiffChart('diffChart', diffData);
+  drawDiffChart('slowChart', slowData);
 }
 drawAllCharts();
 window.addEventListener('resize', drawAllCharts);
